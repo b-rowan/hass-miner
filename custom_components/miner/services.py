@@ -21,27 +21,26 @@ LOGGER = logging.getLogger(__name__)
 async def async_setup_services(hass: HomeAssistant) -> None:
     """Service handler setup."""
 
-    async def get_miner(call: ServiceCall):
+    async def get_miners(call: ServiceCall):
         miners = hass.data[DOMAIN]
-        miner_id = call.data[CONF_DEVICE_ID]
+        miner_ids = call.data[CONF_DEVICE_ID]
 
         if miner_id is None or miner_id not in miners:
             LOGGER.error(
                 f"Cannot get miner, must specify a miner from [{miners}]",
             )
             return
-        return await miners[miner_id].get_miner()
+        return await asyncio.gather(*[miners[miner_id].get_miner() for miner_id in miner_ids])
 
     async def reboot(call: ServiceCall) -> None:
-        miner = await get_miner(call)
-        if miner is not None:
-            await miner.reboot()
+        miners = await get_miners(call)
+        await asyncio.gather(*[m.reboot() for m in miners if m is not None else asyncio.sleep(0, False)])
 
     hass.services.async_register(DOMAIN, SERVICE_REBOOT, reboot)
 
     async def restart_backend(call: ServiceCall) -> None:
         miner = await get_miner(call)
-        if miner is not None:
-            await miner.restart_backend()
+        await asyncio.gather(*[m.restart_backend() for m in miners if m is not None else asyncio.sleep(0, False)])
+
 
     hass.services.async_register(DOMAIN, SERVICE_RESTART_BACKEND, restart_backend)
