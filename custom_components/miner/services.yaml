@@ -1,9 +1,11 @@
 reboot:
+  description: Choose miner device to reboot
   target:
     entity:
-      domain: miner
+      integration: miner
 
 restart_backend:
+  description: Choose miner device to restart the mining process of
   target:
     entity:
-      domain: miner
+      integration: miner
